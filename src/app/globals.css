@@ -2849,3 +2849,124 @@ td .badge {
   padding: 10px;
   border-radius: 7px;
 }
+
+.dataset-switch {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+.dataset-switch strong,
+.dataset-switch small {
+  display: block;
+}
+.dataset-switch small {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px;
+  max-width: 480px;
+}
+.dataset-switch .button-row {
+  margin: 0;
+  flex-shrink: 0;
+}
+.automatic-radar h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  margin: 0;
+}
+.automatic-radar .radar-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 13px;
+  background: #f4f7f0;
+  border-radius: 8px;
+  margin: 18px 0;
+}
+.radar-status strong {
+  font-size: 12px;
+  flex-basis: 100%;
+}
+.radar-status span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 10px;
+  color: #6b7b60;
+}
+.radar-job-form {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 20px;
+}
+.radar-jobs article {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.radar-jobs strong,
+.radar-jobs small {
+  display: block;
+}
+.radar-jobs strong {
+  font-size: 13px;
+}
+.radar-jobs small {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.radar-jobs .button-row {
+  margin: 0;
+}
+.automatic-radar summary {
+  font-size: 12px;
+}
+.automatic-radar .notice p {
+  margin: 3px 0;
+}
+.automatic-radar .notice a {
+  display: block;
+  font-size: 11px;
+  margin-top: 8px;
+}
+@media (max-width: 760px) {
+  .dataset-switch {
+    display: block;
+    padding: 16px;
+  }
+  .dataset-switch .button-row {
+    margin-top: 12px;
+  }
+  .automatic-radar .panel-title {
+    align-items: flex-start;
+  }
+  .automatic-radar h2 {
+    font-size: 16px;
+  }
+  .radar-jobs article {
+    display: block;
+  }
+  .radar-jobs .button-row {
+    margin-top: 12px;
+  }
+  .radar-jobs .button {
+    font-size: 10px;
+  }
+  .automatic-radar .notice {
+    font-size: 11px;
+  }
+  .automatic-radar .notice a {
+    overflow-wrap: anywhere;
+  }
+}

@@ -1,5 +1,82 @@
 import { test, expect } from "@playwright/test";
 const password = "Fixture-e2e-somente-testes-123!";
+test("radar real separado dos exemplos, busca salva e bloqueio honesto sem credenciais", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  await page.getByLabel("E-mail", { exact: true }).fill("e2e@example.test");
+  await page.getByLabel("Senha", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Entrar no radar" }).click();
+  await expect(
+    page.getByRole("button", { name: "Ver ofertas reais", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const nav = async (name: string) => {
+    if (testInfo.project.name === "mobile")
+      await page
+        .getByRole("button", { name: "Abrir menu", exact: true })
+        .click();
+    await page
+      .getByRole("navigation", { name: "Menu principal" })
+      .getByRole("button", { name, exact: true })
+      .click();
+  };
+  await nav("Radar de ofertas");
+  await expect(
+    page.getByText("Acesso de API não configurado", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Termo de busca", exact: true })
+    .fill("termo fixture " + testInfo.project.name);
+  await page
+    .getByRole("button", {
+      name: "Salvar busca com agendamento desligado",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Busca salva");
+  const row = page
+    .locator(".radar-jobs article")
+    .filter({ hasText: "termo fixture " + testInfo.project.name });
+  await expect(
+    row.getByRole("button", { name: "Buscar agora na API", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    row.getByRole("button", { name: "Habilitar agendamento", exact: true }),
+  ).toBeDisabled();
+  await nav("Integrações");
+  await expect(
+    page.getByLabel("Access token obtido pelo fluxo autorizado da plataforma", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Testar autorização de busca",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Ver exemplos", exact: true }).click();
+  await expect(
+    page.getByText(
+      "Mude para Ofertas reais para configurar a conexão com a API.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Ver ofertas reais", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Testar autorização de busca",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
 test("entra, importa quatro cupons, calcula, aprova, edita, copia e registra publicação", async ({
   page,
   context,
@@ -37,6 +114,7 @@ test("entra, importa quatro cupons, calcula, aprova, edita, copia e registra pub
       page.getByText("Exemplos carregados.", { exact: true }),
     ).toBeVisible();
   }
+  await page.getByRole("button", { name: "Ver exemplos", exact: true }).click();
   await nav("Central de cupons");
   await page
     .getByLabel("Texto para importar cupons")
@@ -97,7 +175,7 @@ test("entra, importa quatro cupons, calcula, aprova, edita, copia e registra pub
     });
   await dialog
     .getByLabel("Cupom opcional", { exact: true })
-    .selectOption({ label: `CASA${suffix} · Mercado Livre` });
+    .selectOption({ label: `CASA${suffix} · Mercado Livre (exemplo)` });
   await dialog
     .getByLabel("Preço conferido agora (R$)", { exact: true })
     .fill("300");
@@ -162,7 +240,7 @@ test("entra, importa quatro cupons, calcula, aprova, edita, copia e registra pub
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
     "Mensagem revisada no teste.",
   );
-  const before = await page.request.get("/api/state");
+  const before = await page.request.get("/api/state?dataset=demo");
   const beforeData = await before.json();
   expect(
     beforeData.publications.filter(

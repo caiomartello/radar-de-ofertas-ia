@@ -58,6 +58,8 @@ export type Seller = {
   trust_status: "review" | "trusted" | "blocked";
   evidence: string;
   demo: number;
+  api_metrics?: string | null;
+  api_checked_at?: string | null;
 };
 export type Coupon = {
   last_verification_at?: string | null;
@@ -95,6 +97,16 @@ export type Group = {
   demo: number;
 };
 export type Offer = {
+  opportunity?: {
+    sufficient: boolean;
+    count: number;
+    days: number;
+    median: number | null;
+    below_percent: number | null;
+  };
+  api_metadata?: string | null;
+  stock_quantity?: number | null;
+  availability_status?: string | null;
   version: number;
   id: string;
   listing_id: string;
@@ -300,6 +312,7 @@ export function rankOffer(
     price_cents: number;
     calculation: Calculation;
     checked_at: string;
+    confidence?: string;
   },
   timestamp = Date.now(),
 ): Score {
@@ -317,14 +330,18 @@ export function rankOffer(
     warnings.push("Sem referência de preço documentada.");
   else
     warnings.push(
-      "Referência informada manualmente; não é histórico de mercado.",
+      input.confidence === "api"
+        ? "Preço original anunciado pela plataforma; não comprova preço habitual."
+        : "Referência informada manualmente; não é histórico de mercado.",
     );
-  warnings.push("Interesse do público, vendas e estoque não medidos.");
+  warnings.push(
+    "Interesse e popularidade do público não medidos. Vendas e estoque dependem dos dados disponibilizados pela fonte.",
+  );
   if (timestamp - Date.parse(input.checked_at) > 24 * 3600000)
     warnings.push("Última conferência tem mais de 24 horas.");
   const factors = [
     {
-      label: "Referência documentada (manual)",
+      label: "Referência documentada (fonte informada)",
       points:
         input.reference_cents &&
         input.reference_source &&
@@ -352,7 +369,10 @@ export function rankOffer(
       maximum: 15,
     },
     {
-      label: "Dados e conferência manual recente",
+      label:
+        input.confidence === "api"
+          ? "Dados recentes da API oficial"
+          : "Dados e conferência manual recente",
       points: timestamp - Date.parse(input.checked_at) < 86400000 ? 10 : 2,
       maximum: 15,
     },
@@ -443,13 +463,15 @@ export function generateMessage(offer: Offer, style = "informativo") {
   lines.push(
     `🏬 Vendedor recomendado: ${offer.seller.name} (ID: ${offer.seller.platform_seller_id})`,
   );
-  lines.push(`🔗 ${offer.affiliate_url || offer.url}`);
+  lines.push(
+    `${offer.affiliate_url ? "🔗 Link informado como afiliado (rastreamento não verificado)" : "🔗 Link comum do produto; sem afiliação confirmada"}: ${offer.affiliate_url || offer.url}`,
+  );
   if (offer.affiliate_url)
     lines.push(
-      "Link de afiliado informado manualmente. Podemos receber comissão.",
+      "Link de afiliado informado manualmente; comissão depende das regras e do rastreamento do programa.",
     );
   lines.push(
-    `Conferência manual: ${dateTime(offer.checked_at)} (horário de Brasília).`,
+    `${offer.confidence === "api" ? "Consulta à API oficial" : "Conferência manual"}: ${dateTime(offer.checked_at)} (horário de Brasília).`,
     "⚠️ Confira o vendedor e o preço no checkout. Frete não incluído na estimativa.",
   );
   if (offer.demo)

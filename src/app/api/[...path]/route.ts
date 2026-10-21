@@ -25,6 +25,7 @@ import {
   publicUser,
   type User,
 } from "@/lib/auth";
+import { radarAction } from "@/lib/radar";
 import { loginSchema, inviteSchema, acceptSchema } from "@/lib/schemas";
 import {
   coupons,
@@ -103,6 +104,7 @@ async function route(
     const [resource, key, action] = parts;
     if (parts.length > 3) throw new AppError("Página não encontrada.", 404);
     const method = req.method;
+    const requestDemo = req.nextUrl.searchParams.get("dataset") === "demo";
     if (method !== "GET") csrf(req);
     if (resource === "auth" && key === "login" && method === "POST") {
       const input = loginSchema.parse(await body(req));
@@ -184,10 +186,36 @@ async function route(
       response.cookies.set(cookieName, "", { ...cookieOptions(), maxAge: 0 });
       return response;
     }
-    if (resource === "state" && method === "GET") return json(state(user));
+    if (resource === "radar" && requestDemo && method !== "GET")
+      throw new AppError(
+        "Mude para Ofertas reais antes de configurar ou executar a API.",
+      );
+    if (resource === "radar")
+      return json(
+        await radarAction(
+          user,
+          key,
+          action,
+          method,
+          method === "GET" ? undefined : await body(req),
+        ),
+      );
+    if (resource === "state" && method === "GET")
+      return json(
+        state(
+          user,
+          z
+            .enum(["real", "demo"])
+            .default("real")
+            .parse(req.nextUrl.searchParams.get("dataset") || undefined),
+        ),
+      );
     if (resource === "sellers" && method === "POST") {
       requirePermission(user, "sellers.manage");
-      return json({ id: saveSeller(user, await body(req)) }, 201);
+      return json(
+        { id: saveSeller(user, await body(req), undefined, requestDemo) },
+        201,
+      );
     }
     if (resource === "sellers" && key && method === "PATCH") {
       requirePermission(user, "sellers.manage");
@@ -195,7 +223,10 @@ async function route(
     }
     if (resource === "groups" && method === "POST") {
       requirePermission(user, "groups.manage");
-      return json({ id: saveGroup(user, await body(req)) }, 201);
+      return json(
+        { id: saveGroup(user, await body(req), undefined, requestDemo) },
+        201,
+      );
     }
     if (resource === "groups" && key && method === "PATCH") {
       requirePermission(user, "groups.manage");
@@ -214,7 +245,10 @@ async function route(
     }
     if (resource === "coupons" && !key && method === "POST") {
       requirePermission(user, "coupons.manage");
-      return json({ id: saveCoupon(user, await body(req)) }, 201);
+      return json(
+        { id: saveCoupon(user, await body(req), undefined, requestDemo) },
+        201,
+      );
     }
     if (resource === "coupons" && key && !action && method === "PATCH") {
       requirePermission(user, "coupons.manage");
@@ -252,7 +286,10 @@ async function route(
     }
     if (resource === "offers" && !key && method === "POST") {
       requirePermission(user, "offers.manage");
-      return json({ id: saveOffer(user, await body(req)) }, 201);
+      return json(
+        { id: saveOffer(user, await body(req), undefined, requestDemo) },
+        201,
+      );
     }
     if (resource === "offers" && key && !action && method === "PATCH") {
       requirePermission(user, "offers.manage");
@@ -278,6 +315,13 @@ async function route(
       );
       const offer = getOffer(key);
       if (input.status === "approved") {
+        if (
+          offer.stock_quantity === 0 ||
+          (offer.availability_status && offer.availability_status !== "active")
+        )
+          throw new AppError(
+            "A API informou anúncio sem disponibilidade. Aguarde nova consulta com disponibilidade válida.",
+          );
         if (offer.score.blocked)
           throw new AppError(
             "Vendedor de risco: aprovação bloqueada. Revise o cadastro e as evidências.",
@@ -358,7 +402,7 @@ async function route(
           );
         else {
           run(
-            "UPDATE listings SET price_cents=?,checked_at=? WHERE id=?",
+            "UPDATE listings SET price_cents=?,checked_at=?,source='Conferência manual',confidence='manual' WHERE id=?",
             input.price_cents,
             now(),
             offer.listing_id,
@@ -515,6 +559,13 @@ async function route(
       }>("SELECT * FROM message_drafts WHERE id=?", input.draft_id);
       if (!draft) throw new AppError("Mensagem não encontrada.", 404);
       const offer = getOffer(draft.offer_id);
+      if (
+        offer.stock_quantity === 0 ||
+        (offer.availability_status && offer.availability_status !== "active")
+      )
+        throw new AppError(
+          "A API informou anúncio sem disponibilidade. Revise a oferta.",
+        );
       if (offer.status !== "approved" || offer.score.blocked)
         throw new AppError(
           "A oferta deve estar aprovada e com vendedor elegível.",
@@ -750,27 +801,45 @@ async function route(
     );
   }
 }
-function state(user: User) {
+function state(user: User, dataset: "real" | "demo" = "real") {
+  const demo = dataset === "demo" ? 1 : 0;
   const can = (p: Permission) => user.permissions.includes(p);
   return {
     server_time: now(),
+    dataset,
+    datasets: {
+      real_offers: one<{ count: number }>(
+        "SELECT count(*) count FROM offers WHERE demo=0",
+      )!.count,
+      demo_offers: one<{ count: number }>(
+        "SELECT count(*) count FROM offers WHERE demo=1",
+      )!.count,
+    },
     user,
-    offers: can("offers.view") ? offers() : [],
-    sellers: can("offers.view") || can("sellers.manage") ? sellers() : [],
-    coupons: can("offers.view") || can("coupons.manage") ? coupons() : [],
+    offers: can("offers.view") ? offers().filter((o) => o.demo === demo) : [],
+    sellers:
+      can("offers.view") || can("sellers.manage")
+        ? sellers().filter((s) => s.demo === demo)
+        : [],
+    coupons:
+      can("offers.view") || can("coupons.manage")
+        ? coupons().filter((c) => c.demo === demo)
+        : [],
     groups:
       can("offers.view") || can("groups.manage") || can("posts.prepare")
-        ? groups()
+        ? groups().filter((g) => g.demo === demo)
         : [],
     drafts: can("posts.prepare")
       ? all(
-          "SELECT d.*,o.version current_offer_version,g.name group_name,p.title offer_title,o.demo FROM message_drafts d JOIN groups g ON g.id=d.group_id JOIN offers o ON o.id=d.offer_id JOIN listings l ON l.id=o.listing_id JOIN products p ON p.id=l.product_id ORDER BY d.updated_at DESC",
+          "SELECT d.*,o.version current_offer_version,g.name group_name,p.title offer_title,o.demo FROM message_drafts d JOIN groups g ON g.id=d.group_id JOIN offers o ON o.id=d.offer_id JOIN listings l ON l.id=o.listing_id JOIN products p ON p.id=l.product_id WHERE o.demo=? ORDER BY d.updated_at DESC",
+          demo,
         )
       : [],
     publications:
       can("posts.prepare") || can("posts.publish")
         ? all(
-            "SELECT p.*,g.name group_name,u.name operator_name FROM publications p JOIN groups g ON g.id=p.group_id JOIN users u ON u.id=p.declared_by ORDER BY p.declared_at DESC",
+            "SELECT p.*,g.name group_name,u.name operator_name FROM publications p JOIN groups g ON g.id=p.group_id JOIN users u ON u.id=p.declared_by JOIN offers o ON o.id=p.offer_id WHERE o.demo=? ORDER BY p.declared_at DESC",
+            demo,
           )
         : [],
     integrations: all(
@@ -778,7 +847,8 @@ function state(user: User) {
     ),
     alerts: can("offers.view")
       ? all(
-          "SELECT * FROM alerts WHERE dismissed_at IS NULL ORDER BY created_at DESC",
+          "SELECT a.* FROM alerts a JOIN offers o ON o.id=a.offer_id WHERE a.dismissed_at IS NULL AND o.demo=? ORDER BY a.created_at DESC",
+          demo,
         )
       : [],
     users:

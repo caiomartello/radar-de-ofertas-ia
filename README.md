@@ -1,10 +1,16 @@
 # Radar de Ofertas IA
 
+## Atualizar uma instalação existente (Windows)
+
+**Já criou sua conta e tem dados no Radar?** Preserve a pasta antiga. Baixe esta versão em outra pasta e execute **ATUALIZAR_RADAR.cmd** na pasta nova; informe o caminho da instalação antiga. O atualizador cria backup, preserva `.env.local`, banco e usuários, instala dependências e aplica migrations sem recriar contas. Ao terminar, abra **INICIAR_RADAR.cmd na pasta antiga** e use o mesmo login. Consulte [o passo a passo do Mercado Livre](docs/MERCADO-LIVRE.md).
+
+**Estado da integração:** o conector foi implementado, mas a descoberta ao vivo está bloqueada por ausência de autorização de API e não foi validada para a conta do administrador. Conta de afiliado não equivale a aplicação autorizada. Sem token/permissão, não há produtos reais obtidos automaticamente. Amazon, Shopee e OCR continuam pendentes.
+
 ## Baixar e visualizar no Windows
 
-No GitHub, abra a branch `codex/radar-fase1-windows-20261021` e clique no botão verde **Code → Download ZIP**. Depois clique com o botão direito no ZIP baixado → **Extrair tudo → Extrair**. Trabalhe na pasta extraída, não dentro do arquivo compactado.
+No GitHub, abra a branch `codex/mercado-livre-radar-20261021` e clique no botão verde **Code → Download ZIP**. Depois clique com o botão direito no ZIP baixado → **Extrair tudo → Extrair**. Trabalhe na pasta extraída, não dentro do arquivo compactado.
 
-Para ver as capturas sem instalar nada, abra **VER_IMAGENS.html** ou **VER_IMAGENS.pdf** com dois cliques. São capturas reais; o dashboard tem dados fictícios identificados. A galeria não é o aplicativo interativo.
+Para ver as capturas sem instalar nada, abra **VER_IMAGENS.html** ou **VER_IMAGENS.pdf** com dois cliques. São capturas da Fase 1; o dashboard tem dados fictícios identificados. A galeria não é o aplicativo interativo nem comprova a integração nova.
 
 Para testar o aplicativo, instale Node.js **24 LTS (24.15 ou superior dentro da série 24)** pelo site oficial `nodejs.org`. Abra **INICIAR_RADAR.cmd** com dois cliques. Ele instala as dependências gratuitas, prepara o banco local, pede que você crie sua conta pessoal de administrador e abre o navegador quando o servidor estiver pronto. A senha é digitada no terminal e permanece oculta. Mantenha essa janela aberta durante o teste; para encerrar, use Ctrl+C.
 
@@ -14,7 +20,7 @@ O GitHub preserva o código desta versão. Arquivos privados de configuração, 
 
 ---
 
-Aplicativo privado de curadoria de ofertas, em português brasileiro. **A Fase 1 implementa operação manual de ponta a ponta.** O nome do produto não significa que exista uma IA externa conectada: o parser de cupons, o score e as mensagens usam regras determinísticas, sem custos de chamadas de IA.
+Aplicativo privado de curadoria de ofertas, em português brasileiro. **A versão 0.2 mantém o fluxo manual e acrescenta um conector Mercado Livre condicionado a autorização testada.** O nome do produto não significa que exista uma IA externa conectada: o parser de cupons, o score e as mensagens usam regras determinísticas, sem custos de chamadas de IA.
 
 ## O que você já consegue fazer
 
@@ -24,7 +30,8 @@ Aplicativo privado de curadoria de ofertas, em português brasileiro. **A Fase 1
 - Colar texto com vários cupons, revisar cada candidato e cadastrar regras de categoria, vendedor, validade, compra mínima, teto, pagamento e público.
 - Calcular preço **teórico**, aprovar/rejeitar, gerar e editar mensagens, copiar para publicação manual e registrar a publicação por grupo.
 - Conferir manualmente preço e seller ID, detectar divergências, construir histórico próprio, consultar auditoria e exportar dados de trabalho.
-- Guardar credenciais cifradas no servidor, somente como administrador. Isso **não ativa** nenhuma API.
+- Guardar credenciais cifradas, testar o acesso oficial do Mercado Livre e salvar buscas com recorrência. A busca só pode ser executada após a API aceitar a autorização. Guardar um token não prova permissão.
+- Separar explicitamente ofertas reais e exemplos, preservar históricos e comparar com a mediana observada quando houver amostra suficiente.
 
 Sem informação suficiente, o sistema mostra “desconhecido” ou pede revisão. Dados fictícios são opcionais e têm selo **Exemplo**. Ofertas que usam vendedor, cupom ou grupo de exemplo também são marcadas como exemplo.
 
@@ -115,11 +122,11 @@ O Dockerfile/Compose é fornecido como caminho de implantação; consulte `docs/
 | `APP_URL`                    | Origem exata do aplicativo. Obrigatória em produção e usada na proteção de origem e nos convites.                  |
 | `INTEGRATION_ENCRYPTION_KEY` | Chave hexadecimal de 32 bytes para cifrar credenciais com AES-256-GCM. Gerada por `setup`; mantenha cópia privada. |
 
-Senhas são derivadas com scrypt e sal aleatório. Sessões usam tokens aleatórios, armazenados como hash, cookies HttpOnly/SameSite=Strict e Secure em produção. Mutações verificam origem e autorização no servidor; há limites de tentativas e tamanhos de requisição. Não há consulta de URLs pelo backend nem uploads de arquivos nesta fase. Imagens HTTPS são carregadas diretamente pelo navegador e podem informar seu IP ao servidor da imagem.
+Senhas são derivadas com scrypt e sal aleatório. Sessões usam tokens aleatórios, armazenados como hash, cookies HttpOnly/SameSite=Strict e Secure em produção. Mutações verificam origem e autorização no servidor; há limites de tentativas e tamanhos de requisição. O backend consulta somente caminhos fixos da API oficial do Mercado Livre usando HTTPS; não consulta URLs arbitrárias fornecidas pelo usuário. Uploads e OCR não estão implementados. Imagens HTTPS são carregadas diretamente pelo navegador e podem informar seu IP ao servidor da imagem.
 
 Apenas o administrador pode guardar/substituir credenciais, convidar usuários e administrar configurações. Credenciais não voltam para o navegador, exportações ou logs. Não existem configurações financeiras nem rastreamento de comissão nesta fase; novos módulos financeiros devem manter a mesma restrição. A auditoria registra ações e dados de trabalho; não registre informações pessoais em justificativas.
 
-Para começar, **nenhuma credencial de Mercado Livre, Amazon ou Shopee é necessária**. Crie links pelos meios autorizados de cada programa e cole-os manualmente. Antes de divulgação real, confirme regras do programa e os canais permitidos. Somente uma futura implementação comprovada pode ativar APIs e agendamentos. Credenciais guardadas nesta fase são opcionais e não são validadas contra serviços externos.
+Para começar, **nenhuma credencial de Mercado Livre, Amazon ou Shopee é necessária**. Crie links pelos meios autorizados de cada programa e cole-os manualmente. Antes de divulgação real, confirme regras do programa e os canais permitidos. Para descoberta pelo Mercado Livre é necessária autorização de API: o teste consulta a conta e a busca oficial e só então habilita as operações. A integração ao vivo ainda não foi validada para a conta do administrador. Amazon e Shopee continuam sem conectores. Veja docs/MERCADO-LIVRE.md.
 
 ## Backup e restauração
 
@@ -148,9 +155,11 @@ docs/                arquitetura, limites e validação
 ```
 
 - **Fase 1:** fluxo manual implementado nesta versão. Modelos de mensagem são os três estilos do gerador; editor livre por rascunho. O editor de modelos reutilizáveis por grupo é uma expansão pendente, não um botão simulado.
-- **Fase 2:** conectores oficiais autorizados, agendamentos com limites, revalidação automática quando permitida, OCR de imagens, alertas e histórico mais rico. A conferência atual é manual.
+- **Fase 2 (esta etapa):** conector Mercado Livre com credencial, teste de acesso, busca de até 10 anúncios, detalhes/vendedor, histórico próprio, agendamento e separação de exemplos. Operação real depende de API autorizada, ainda não validada para a conta. OCR, outras plataformas e histórico externo ficam para etapas seguintes.
 - **Fase 3:** PostgreSQL/mais escala quando necessário, ranking por público, métricas reais acessíveis, notificações e Telegram autorizado.
 
-O parser não entende qualquer formato de mensagem, categorias não são inferidas sem confirmação, não há coleta de mensagens privadas, scraping, agendamentos, push ou envio automático. Restrições de pagamento/público não confirmadas deixam o cálculo pendente. Histórico só exibe estatísticas com pelo menos 10 observações em 7 dias distintos na janela; essa amostra continua sem provar a mínima histórica de mercado. Score é uma heurística explicável, não um modelo de conversão.
+O parser não entende qualquer formato de mensagem, categorias não são inferidas sem confirmação, não há coleta de mensagens privadas, scraping, push ou envio automático. A recorrência do Mercado Livre exige processo local aberto e autorização de API confirmada. Restrições de pagamento/público não confirmadas deixam o cálculo pendente. Histórico só exibe estatísticas com pelo menos 10 observações em 7 dias distintos na janela; essa amostra continua sem provar a mínima histórica de mercado. Score é uma heurística explicável, não um modelo de conversão.
+
+Auditoria inicial: [docs/AUDITORIA-FASE-2.md](docs/AUDITORIA-FASE-2.md). Guia e limites do conector: [docs/MERCADO-LIVRE.md](docs/MERCADO-LIVRE.md).
 
 Detalhes técnicos e decisões: [docs/ARQUITETURA.md](docs/ARQUITETURA.md).

@@ -7,6 +7,7 @@ import {
   type Seller,
   type Offer,
   type Group,
+  priceHistory,
 } from "./domain";
 import {
   offerSchema,
@@ -42,7 +43,7 @@ export function offers(): Offer[] {
     couponList = coupons();
   return all<
     Omit<Offer, "seller" | "coupon" | "score" | "calculation" | "group_ids">
-  >(`SELECT o.*,l.platform,l.platform_listing_id,l.seller_id,l.url,l.image_url,l.price_cents,l.reference_cents,l.reference_source,l.shipping_cents,l.checked_at,l.source,l.confidence,p.title,p.category,p.variation,
+  >(`SELECT o.*,l.platform,l.platform_listing_id,l.seller_id,l.url,l.image_url,l.price_cents,l.reference_cents,l.reference_source,l.shipping_cents,l.checked_at,l.source,l.confidence,l.api_metadata,l.stock_quantity,l.availability_status,p.title,p.category,p.variation,
     (SELECT url FROM affiliate_links a WHERE a.listing_id=l.id ORDER BY a.created_at DESC LIMIT 1) affiliate_url,
     (SELECT created_at FROM affiliate_links a WHERE a.listing_id=l.id ORDER BY a.created_at DESC LIMIT 1) affiliate_checked_at
     FROM offers o JOIN listings l ON l.id=o.listing_id JOIN products p ON p.id=l.product_id ORDER BY o.created_at DESC`).map(
@@ -55,8 +56,26 @@ export function offers(): Offer[] {
         seller,
         coupon,
       );
+      const observations = all<{ price_cents: number; observed_at: string }>(
+        "SELECT price_cents,observed_at FROM price_observations WHERE listing_id=? AND observed_at<?",
+        o.listing_id,
+        o.checked_at,
+      );
+      const summary = priceHistory(observations);
       return {
         ...o,
+        opportunity: {
+          sufficient: summary.sufficient,
+          count: summary.count,
+          days: 30,
+          median: summary.median,
+          below_percent:
+            summary.sufficient &&
+            summary.median &&
+            o.price_cents < summary.median
+              ? Math.round((1 - o.price_cents / summary.median) * 100)
+              : null,
+        },
         seller,
         coupon,
         calculation,
@@ -111,7 +130,7 @@ export function saveSeller(
       );
     } else
       run(
-        "INSERT INTO sellers VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO sellers (id,platform,platform_seller_id,name,reputation,official,authenticity,trust_status,evidence,demo) VALUES (?,?,?,?,?,?,?,?,?,?)",
         key,
         data.platform,
         data.platform_seller_id,
@@ -361,7 +380,7 @@ function insertOffer(
     );
   } else {
     run(
-      "UPDATE listings SET url=?,image_url=?,price_cents=?,reference_cents=?,reference_source=?,shipping_cents=?,checked_at=? WHERE id=?",
+      "UPDATE listings SET url=?,image_url=?,price_cents=?,reference_cents=?,reference_source=?,shipping_cents=?,checked_at=?,source='Cadastro/conferência manual',confidence='manual' WHERE id=?",
       data.url,
       data.image_url || null,
       data.price_cents,

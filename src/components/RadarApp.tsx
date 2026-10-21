@@ -67,6 +67,7 @@ import {
   type CouponCandidate,
 } from "@/lib/domain";
 import Image from "next/image";
+import { AutomaticRadar } from "./AutomaticRadar";
 import type { User } from "@/lib/auth";
 import type { Permission } from "@/lib/db";
 
@@ -120,7 +121,10 @@ type Audit = {
   created_at: string;
   details: string;
 };
+let currentDataset: "real" | "demo" = "real";
 type State = {
+  dataset: "real" | "demo";
+  datasets: { real_offers: number; demo_offers: number };
   server_time: string;
   user: User;
   offers: Offer[];
@@ -170,12 +174,15 @@ async function api<T = Record<string, unknown>>(
   method = "GET",
   data?: unknown,
 ): Promise<T> {
-  const response = await fetch(`/api/${path}`, {
-    method,
-    headers: method === "GET" ? {} : { "Content-Type": "application/json" },
-    body: data === undefined ? undefined : JSON.stringify(data),
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `/api/${path}${path.includes("?") ? "&" : "?"}dataset=${currentDataset}`,
+    {
+      method,
+      headers: method === "GET" ? {} : { "Content-Type": "application/json" },
+      body: data === undefined ? undefined : JSON.stringify(data),
+      cache: "no-store",
+    },
+  );
   const result = await response.json();
   if (!response.ok) {
     const error: ApiError = new Error(
@@ -907,6 +914,49 @@ export default function RadarApp() {
               </button>
             )}
           </div>
+          <section
+            className="dataset-switch"
+            aria-label="Separar dados reais e exemplos"
+          >
+            <div>
+              <strong>
+                {data.dataset === "real"
+                  ? "Ofertas reais"
+                  : "Exemplos fictícios"}
+              </strong>
+              <small>
+                {data.dataset === "real"
+                  ? "Cadastros reais e dados recebidos de APIs. Exemplos ficam em outra visualização."
+                  : "Área de demonstração. Buscas externas ficam disponíveis somente em Ofertas reais."}
+              </small>
+            </div>
+            <div className="button-row">
+              <button
+                className={`button ${data.dataset === "real" ? "primary" : "secondary"}`}
+                aria-pressed={data.dataset === "real"}
+                onClick={() => {
+                  currentDataset = "real";
+                  setSelectedDraft("");
+                  setHistory(null);
+                  void refresh();
+                }}
+              >
+                Ver ofertas reais
+              </button>
+              <button
+                className={`button ${data.dataset === "demo" ? "primary" : "secondary"}`}
+                aria-pressed={data.dataset === "demo"}
+                onClick={() => {
+                  currentDataset = "demo";
+                  setSelectedDraft("");
+                  setHistory(null);
+                  void refresh();
+                }}
+              >
+                Ver exemplos
+              </button>
+            </div>
+          </section>
           {data.offers.some((o) => o.demo === 1) && (
             <div className="demo-banner">
               <Sparkles size={17} />
@@ -1024,10 +1074,11 @@ export default function RadarApp() {
                         className="button primary"
                         disabled={busy}
                         onClick={() =>
-                          perform(
-                            () => api("demo", "POST", {}),
-                            "Exemplos fictícios carregados.",
-                          )
+                          perform(async () => {
+                            if (!data.datasets.demo_offers)
+                              await api("demo", "POST", {});
+                            currentDataset = "demo";
+                          }, "Exemplos fictícios carregados.")
                         }
                       >
                         Experimentar com exemplos
@@ -1066,12 +1117,18 @@ export default function RadarApp() {
                         <div>
                           <strong>{i.name}</strong>
                           <small>
-                            {i.credential_present
-                              ? "Credencial guardada; API pendente"
-                              : "Sem conexão automática"}
+                            {i.id === "mercado_livre" && i.status === "active"
+                              ? "Busca autorizada no último teste"
+                              : i.credential_present
+                                ? "Credencial guardada; confira a autorização em Integrações"
+                                : "Sem conexão automática"}
                           </small>
                         </div>
-                        <Badge tone="neutral">Manual</Badge>
+                        <Badge tone="neutral">
+                          {i.id === "mercado_livre" && i.status === "active"
+                            ? "API"
+                            : "Manual"}
+                        </Badge>
                       </div>
                     ))}
                   <button
@@ -1124,6 +1181,14 @@ export default function RadarApp() {
           )}
           {screen === "offers" && (
             <>
+              {data.dataset === "real" && (
+                <AutomaticRadar
+                  owner={data.user.role === "owner"}
+                  canRun={can("offers.manage")}
+                  onSync={refresh}
+                  configure={() => navigate("integrations")}
+                />
+              )}
               <section className="panel filter-panel">
                 <div className="filter-main">
                   <label className="search-input">
@@ -1579,6 +1644,7 @@ export default function RadarApp() {
                         ? "Autenticidade não verificada"
                         : "Evidência de autenticidade cadastrada; revise a fonte"}
                     </p>
+                    <SellerApiEvidence seller={s} />
                     <button
                       className="button secondary"
                       onClick={() => setModal({ type: "seller", value: s })}
@@ -1908,63 +1974,78 @@ export default function RadarApp() {
           )}
           {screen === "integrations" && (
             <>
+              {data.dataset === "real" ? (
+                <AutomaticRadar
+                  owner={data.user.role === "owner"}
+                  canRun={can("offers.manage")}
+                  onSync={refresh}
+                  configuration
+                />
+              ) : (
+                <div className="notice warning">
+                  Mude para Ofertas reais para configurar a conexão com a API.
+                </div>
+              )}
               <div className="notice warning">
                 <Plug size={20} />
                 <p>
-                  Nenhuma API comercial está ativa nesta versão. Links de
-                  afiliados são colados manualmente; a validação de URL não
-                  confirma comissão, rastreamento ou vendedor. Acesso e regras
-                  de cada programa precisam ser confirmados antes da ativação.
+                  O Mercado Livre depende de autorização testada. Amazon e
+                  Shopee ainda não têm conectores. Links de afiliados são
+                  colados manualmente; a validação de URL não confirma comissão,
+                  rastreamento ou vendedor. Acesso e regras de cada programa
+                  precisam ser confirmados antes da ativação.
                 </p>
               </div>
               <div className="entity-grid">
-                {data.integrations.map((i) => (
-                  <article className="panel entity-card" key={i.id}>
-                    <div className="entity-header">
-                      <span className={`platform-icon large ${i.id}`}>
-                        {i.name.slice(0, 1)}
-                      </span>
-                      <Badge>
-                        {i.status === "configured"
-                          ? "Configurado; não validado"
-                          : "Não configurado"}
-                      </Badge>
-                    </div>
-                    <h3>{i.name}</h3>
-                    <p>
-                      Disponível: cadastro manual de dados e link de afiliado.
-                    </p>
-                    <p>
-                      Busca automática, sincronização e geração de links: não
-                      implementadas.
-                    </p>
-                    <small className="muted">
-                      Última sincronização:{" "}
-                      {i.last_sync_at ? dateTime(i.last_sync_at) : "Nunca"}
-                      <br />
-                      Limite: {i.rate_limit}
-                    </small>
-                    {i.credential_present === 1 && (
-                      <div className="notice">
-                        <LockKeyhole size={17} /> Credencial cifrada no
-                        servidor. Não enviada à interface.
+                {data.integrations
+                  .filter((i) => i.id !== "mercado_livre")
+                  .map((i) => (
+                    <article className="panel entity-card" key={i.id}>
+                      <div className="entity-header">
+                        <span className={`platform-icon large ${i.id}`}>
+                          {i.name.slice(0, 1)}
+                        </span>
+                        <Badge>
+                          {i.status === "configured"
+                            ? "Configurado; não validado"
+                            : "Não configurado"}
+                        </Badge>
                       </div>
-                    )}
-                    {data.user.role === "owner" && (
-                      <button
-                        className="button secondary"
-                        onClick={() =>
-                          setModal({ type: "credential", value: i })
-                        }
-                      >
-                        <LockKeyhole size={15} />
-                        {i.credential_present
-                          ? "Substituir credencial"
-                          : "Guardar credencial (opcional)"}
-                      </button>
-                    )}
-                  </article>
-                ))}
+                      <h3>{i.name}</h3>
+                      <p>
+                        Disponível: cadastro manual de dados e link de afiliado.
+                      </p>
+                      <p>
+                        Busca automática, sincronização e geração de links: não
+                        implementadas.
+                      </p>
+                      <small className="muted">
+                        Última sincronização:{" "}
+                        {i.last_sync_at ? dateTime(i.last_sync_at) : "Nunca"}
+                        <br />
+                        Limite: {i.rate_limit}
+                      </small>
+                      {i.credential_present === 1 && (
+                        <div className="notice">
+                          <LockKeyhole size={17} /> Credencial cifrada no
+                          servidor. Não enviada à interface.
+                        </div>
+                      )}
+                      {data.user.role === "owner" && (
+                        <button
+                          className="button secondary"
+                          onClick={() =>
+                            setModal({ type: "credential", value: i })
+                          }
+                        >
+                          <LockKeyhole size={15} />
+                          {i.credential_present
+                            ? "Substituir credencial"
+                            : "Guardar credencial (opcional)"}
+                        </button>
+                      )}
+                    </article>
+                  ))}
               </div>
               <section className="panel">
                 <h3>O que vem depois?</h3>
@@ -2112,12 +2193,13 @@ export default function RadarApp() {
                       </p>
                       <button
                         className="button secondary"
-                        disabled={busy || data.offers.some((o) => o.demo === 1)}
+                        disabled={busy || data.datasets.demo_offers > 0}
                         onClick={() =>
-                          perform(
-                            () => api("demo", "POST", {}),
-                            "Exemplos carregados.",
-                          )
+                          perform(async () => {
+                            if (!data.datasets.demo_offers)
+                              await api("demo", "POST", {});
+                            currentDataset = "demo";
+                          }, "Exemplos carregados.")
                         }
                       >
                         Carregar exemplos identificados
@@ -2299,7 +2381,7 @@ function OfferCard({
           <span>{categoryNames[o.category]}</span>
           <span
             className="score-mini"
-            title="Score de curadoria baseado em dados manuais"
+            title="Score de curadoria baseado nas informações disponíveis; não comprova autenticidade"
           >
             <Sparkles size={13} />
             {o.score.value}
@@ -2315,7 +2397,8 @@ function OfferCard({
         </div>
         {o.reference_cents && o.reference_source ? (
           <div className="reference-price">
-            Referência manual <s>{money(o.reference_cents)}</s>
+            Referência {o.confidence === "api" ? "da plataforma" : "manual"}{" "}
+            <s>{money(o.reference_cents)}</s>
           </div>
         ) : (
           <div className="reference-price">Referência não informada</div>
@@ -2345,9 +2428,23 @@ function OfferCard({
             Sem cupom vinculado · frete a conferir
           </div>
         )}
+        {o.opportunity?.below_percent != null ? (
+          <p className="small-note">
+            {o.opportunity.below_percent}% abaixo da mediana observada ·{" "}
+            {o.opportunity.count} observações em 30 dias. Não representa todo o
+            mercado.
+          </p>
+        ) : (
+          <p className="muted">
+            Histórico próprio: {o.opportunity?.count ?? 0} observações
+            anteriores; sem comprovação de preço habitual.
+          </p>
+        )}
         <div className="card-check">
           <Clock3 size={12} />
-          Conferência manual: {dateTime(o.checked_at)}
+          {o.confidence === "api"
+            ? "Consulta à API"
+            : "Conferência manual"}: {dateTime(o.checked_at)}
         </div>
         <div className="card-actions">
           <button className="button secondary" onClick={open}>
@@ -3088,7 +3185,11 @@ function ModalContents({
             <dd>{money(o.price_cents)}</dd>
           </div>
           <div>
-            <dt>Conferência manual</dt>
+            <dt>
+              {o.confidence === "api"
+                ? "Consulta à API oficial"
+                : "Conferência manual"}
+            </dt>
             <dd>{dateTime(o.checked_at)} · Brasília</dd>
           </div>
           <div>
@@ -3126,6 +3227,32 @@ function ModalContents({
               {a.message}
             </div>
           ))}
+        <SellerApiEvidence seller={o.seller} />
+        {o.api_metadata && (
+          <div className="notice">
+            <div>
+              <strong>Dados da última consulta à API</strong>
+              <p>
+                Estoque informado: {o.stock_quantity ?? "não disponibilizado"} ·
+                confirme no checkout. Vendas informadas do anúncio:{" "}
+                {String(
+                  readApiFacts(o.api_metadata).sold_quantity ??
+                    "não disponibilizadas",
+                )}
+                .
+              </p>
+              <p>
+                Categoria da plataforma:{" "}
+                {String(
+                  readApiFacts(o.api_metadata).category_id ??
+                    "não disponibilizada",
+                )}
+                . A classificação interna e a compatibilidade com cupons exigem
+                revisão. A API não comprova originalidade.
+              </p>
+            </div>
+          </div>
+        )}
         <h4>Como o score foi calculado</h4>
         {o.score.factors.map((f) => (
           <div className="score-factor" key={f.label}>
@@ -3137,8 +3264,8 @@ function ModalContents({
           </div>
         ))}
         <p className="muted">
-          Score de curadoria baseado nas informações manuais. Não prevê vendas e
-          não garante segurança, autenticidade ou preço.
+          Score de curadoria baseado nas informações disponíveis. Não prevê
+          vendas e não garante segurança, autenticidade ou preço.
         </p>
         <div className="link-row">
           <a href={o.url} target="_blank" rel="noopener noreferrer">
@@ -3146,7 +3273,8 @@ function ModalContents({
           </a>
           {o.affiliate_url && (
             <a href={o.affiliate_url} target="_blank" rel="noopener noreferrer">
-              Link de afiliado <ArrowUpRight size={15} />
+              Link informado como afiliado (não verificado){" "}
+              <ArrowUpRight size={15} />
             </a>
           )}
         </div>
@@ -3553,4 +3681,41 @@ function ModalContents({
       </form>
     );
   return null;
+}
+
+function readApiFacts(raw: string | null | undefined): Record<string, unknown> {
+  try {
+    const data = JSON.parse(raw || "{}");
+    return data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  } catch {
+    return {};
+  }
+}
+function SellerApiEvidence({ seller }: { seller: Seller }) {
+  if (!seller.api_metrics) return null;
+  const data = readApiFacts(seller.api_metrics);
+  const transactions =
+    data.transactions && typeof data.transactions === "object"
+      ? (data.transactions as Record<string, unknown>)
+      : {};
+  return (
+    <details className="seller-api-evidence">
+      <summary>Dados do vendedor recebidos da API</summary>
+      <p>
+        Consulta:{" "}
+        {seller.api_checked_at
+          ? dateTime(seller.api_checked_at)
+          : "Data não disponível"}
+        . Nível informado: {String(data.level_id ?? "não disponibilizado")}.
+        Classificação:{" "}
+        {String(data.power_seller_status ?? "não disponibilizada")}.
+      </p>
+      <p>
+        Transações totais informadas:{" "}
+        {String(transactions.total ?? "não disponibilizadas")}. Não é o volume
+        de vendas deste produto. A reputação não garante autenticidade e não
+        altera suas listas manuais de confiança.
+      </p>
+    </details>
+  );
 }

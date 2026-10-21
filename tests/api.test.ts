@@ -536,7 +536,12 @@ test("fluxo real de API, banco, três contas e segurança", async (t) => {
         (await request("demo", "POST", {}, ownerCookie)).status,
         201,
       );
-      const state = await request("state", "GET", undefined, ownerCookie);
+      const state = await request(
+        "state?dataset=demo",
+        "GET",
+        undefined,
+        ownerCookie,
+      );
       assert.equal(
         state.data.offers.filter((o: Offer) => o.demo === 1).length,
         3,

@@ -1,9 +1,19 @@
 RADAR DE OFERTAS IA - VISUALIZAR E TESTAR NO WINDOWS
 
+JA TEM UMA CONTA E DADOS NA VERSAO ANTERIOR?
+Feche a janela preta antiga. Extraia o ZIP novo em OUTRA pasta.
+Na pasta NOVA, abra ATUALIZAR_RADAR.cmd e informe o caminho da pasta ANTIGA.
+O atualizador faz backup e preserva banco, usuarios e configuracao privada.
+Depois abra INICIAR_RADAR.cmd na pasta ANTIGA e use o mesmo login.
+Nao apague sua pasta antiga nem crie outra conta para atualizar.
+O atualizador foi testado em Linux; confirme sua execucao no Windows.
+
+PRIMEIRA INSTALACAO:
+
 1. Clique com o botao direito no ZIP baixado e escolha "Extrair tudo".
 2. Abra a pasta radar-de-ofertas-ia extraida.
 3. Para ver as telas sem instalar nada: abra VER_IMAGENS.html ou VER_IMAGENS.pdf.
-   Sao capturas reais. Os dados do dashboard sao ficticios, usados nos testes.
+   Sao capturas da Fase 1. Os dados do dashboard sao ficticios, usados nos testes.
    A galeria e o PDF nao sao o aplicativo interativo.
 4. Para testar o aplicativo de verdade: instale o Node.js 24 LTS, versao 24.15
    ou superior dentro da serie 24, pelo site oficial https://nodejs.org/.
@@ -23,4 +33,13 @@ preparado para Windows, mas nao foi executado em um Windows real aqui.
 Se aparecer erro, copie somente a mensagem de erro, nunca senhas ou chaves.
 
 Se o Node.js nao for encontrado logo apos a instalacao, feche a janela e
-abra INICIAR_RADAR.cmd de novo. Este teste nao conecta APIs de marketplaces.
+abra INICIAR_RADAR.cmd de novo.
+
+VERSAO 0.2 - RADAR AUTOMATICO:
+Use "Ver ofertas reais" para separar ofertas e exemplos.
+Em Radar de ofertas, voce pode salvar uma busca com agendamento desligado.
+Em Integracoes, o Mercado Livre exige token de uma aplicacao autorizada.
+Ter somente conta de afiliado nao libera esse acesso automaticamente.
+O acesso ao vivo ainda nao foi validado: a tentativa sem token recebeu 403.
+Nao houve produtos reais importados nesta validacao. Nao cole segredos no chat.
+Consulte docs/MERCADO-LIVRE.md para detalhes e limitacoes.
