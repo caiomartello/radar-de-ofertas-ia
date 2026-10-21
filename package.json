@@ -1,0 +1,41 @@
+{
+  "name": "radar-de-ofertas-ia",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24.15 <25"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "owner": "tsx scripts/owner.ts",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "setup": "node scripts/config.mjs && npm run db:migrate",
+    "backup": "tsx scripts/backup.ts",
+    "format": "prettier --write src scripts tests e2e docs *.json *.ts *.mjs README.md compose.yaml"
+  },
+  "dependencies": {
+    "@next/env": "^16.4.2",
+    "lucide-react": "^0.468.0",
+    "next": "^16.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.2.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

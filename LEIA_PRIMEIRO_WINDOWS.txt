@@ -1,0 +1,26 @@
+RADAR DE OFERTAS IA - VISUALIZAR E TESTAR NO WINDOWS
+
+1. Clique com o botao direito no ZIP baixado e escolha "Extrair tudo".
+2. Abra a pasta radar-de-ofertas-ia extraida.
+3. Para ver as telas sem instalar nada: abra VER_IMAGENS.html ou VER_IMAGENS.pdf.
+   Sao capturas reais. Os dados do dashboard sao ficticios, usados nos testes.
+   A galeria e o PDF nao sao o aplicativo interativo.
+4. Para testar o aplicativo de verdade: instale o Node.js 24 LTS, versao 24.15
+   ou superior dentro da serie 24, pelo site oficial https://nodejs.org/.
+5. Abra INICIAR_RADAR.cmd com dois cliques. Nao execute dentro do ZIP.
+6. Aguarde a instalacao gratuita das dependencias na primeira abertura.
+7. O terminal pedira seu nome, e-mail e uma senha pessoal, duas vezes.
+   A senha fica oculta ao digitar. Nao envie a senha no chat.
+8. O navegador abrira quando o servidor estiver pronto. Entre com sua conta.
+9. Na Visao geral, clique em "Experimentar com exemplos".
+10. Mantenha a janela preta aberta durante o teste. Para encerrar, use Ctrl+C.
+
+O iniciador usa apenas seu computador e escuta somente na interface local.
+Nao publica na internet, nao usa o banco da nuvem nem contrata servicos.
+A instalacao inicial precisa de internet para baixar dependencias gratuitas.
+O aplicativo e a galeria foram testados no ambiente Linux. O iniciador foi
+preparado para Windows, mas nao foi executado em um Windows real aqui.
+Se aparecer erro, copie somente a mensagem de erro, nunca senhas ou chaves.
+
+Se o Node.js nao for encontrado logo apos a instalacao, feche a janela e
+abra INICIAR_RADAR.cmd de novo. Este teste nao conecta APIs de marketplaces.
