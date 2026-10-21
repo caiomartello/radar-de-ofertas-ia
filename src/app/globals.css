@@ -2970,3 +2970,16 @@ td .badge {
     overflow-wrap: anywhere;
   }
 }
+.oauth-connection {
+  border: 1px solid var(--border, #dbe2ec);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 16px 0;
+}
+.oauth-connection .button-row {
+  margin-top: 16px;
+}
+.oauth-connection small {
+  display: block;
+  margin-top: 8px;
+}

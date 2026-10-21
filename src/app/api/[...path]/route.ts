@@ -740,6 +740,7 @@ async function route(
     }
     if (resource === "integrations" && key && method === "PATCH") {
       requirePermission(user, "integrations.manage");
+      if (key === "mercado_livre") throw new AppError("Use a conexão OAuth ou o formulário específico do Mercado Livre em Integrações.", 422);
       const input = z
         .object({ credential: z.string().trim().min(1).max(10000) })
         .parse(await body(req));

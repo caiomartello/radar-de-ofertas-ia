@@ -1,5 +1,11 @@
 # Radar de Ofertas IA
 
+## Conectar ao Mercado Livre (OAuth)
+
+Na instalação local `http://localhost:3000`, a rota de redirect implementada é **`http://localhost:3000/api/oauth/mercado-livre/callback`**. Cadastre esse valor somente se o DevCenter aceitar HTTP local; se exigir HTTPS, será necessário configurar TLS antes. Não basta mudar o texto da URL.
+
+Depois de atualizar, abra **Ver ofertas reais → Integrações → Conectar com Mercado Livre por OAuth**, preencha Client ID/Client Secret somente no formulário do aplicativo e clique em **Salvar aplicação com segurança → Conectar com Mercado Livre**. A renovação é suportada quando a API fornece refresh token. OAuth não garante acesso à busca; use **Testar autorização de busca** depois de conectar. Veja [o guia completo e os limites da validação](docs/OAUTH-MERCADO-LIVRE.md). O fluxo real com sua aplicação ainda não foi validado.
+
 ## Atualizar uma instalação existente (Windows)
 
 **Já criou sua conta e tem dados no Radar?** Preserve a pasta antiga. Baixe esta versão em outra pasta e execute **ATUALIZAR_RADAR.cmd** na pasta nova; informe o caminho da instalação antiga. O atualizador cria backup, preserva `.env.local`, banco e usuários, instala dependências e aplica migrations sem recriar contas. Ao terminar, abra **INICIAR_RADAR.cmd na pasta antiga** e use o mesmo login. Consulte [o passo a passo do Mercado Livre](docs/MERCADO-LIVRE.md).
@@ -8,7 +14,7 @@
 
 ## Baixar e visualizar no Windows
 
-No GitHub, abra a branch `codex/mercado-livre-radar-20261021` e clique no botão verde **Code → Download ZIP**. Depois clique com o botão direito no ZIP baixado → **Extrair tudo → Extrair**. Trabalhe na pasta extraída, não dentro do arquivo compactado.
+No GitHub, abra a branch `codex/mercado-livre-oauth-20261021` e clique no botão verde **Code → Download ZIP**. Depois clique com o botão direito no ZIP baixado → **Extrair tudo → Extrair**. Trabalhe na pasta extraída, não dentro do arquivo compactado.
 
 Para ver as capturas sem instalar nada, abra **VER_IMAGENS.html** ou **VER_IMAGENS.pdf** com dois cliques. São capturas da Fase 1; o dashboard tem dados fictícios identificados. A galeria não é o aplicativo interativo nem comprova a integração nova.
 
@@ -20,7 +26,7 @@ O GitHub preserva o código desta versão. Arquivos privados de configuração, 
 
 ---
 
-Aplicativo privado de curadoria de ofertas, em português brasileiro. **A versão 0.2 mantém o fluxo manual e acrescenta um conector Mercado Livre condicionado a autorização testada.** O nome do produto não significa que exista uma IA externa conectada: o parser de cupons, o score e as mensagens usam regras determinísticas, sem custos de chamadas de IA.
+Aplicativo privado de curadoria de ofertas, em português brasileiro. **A versão 0.3 acrescenta OAuth e renovação de tokens ao conector Mercado Livre, mantendo a busca condicionada a autorização testada.** O nome do produto não significa que exista uma IA externa conectada: o parser de cupons, o score e as mensagens usam regras determinísticas, sem custos de chamadas de IA.
 
 ## O que você já consegue fazer
 

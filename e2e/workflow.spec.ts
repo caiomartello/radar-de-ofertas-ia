@@ -44,6 +44,9 @@ test("radar real separado dos exemplos, busca salva e bloqueio honesto sem crede
     row.getByRole("button", { name: "Habilitar agendamento", exact: true }),
   ).toBeDisabled();
   await nav("Integrações");
+  await page
+    .getByText("Opção avançada: token obtido manualmente", { exact: true })
+    .click();
   await expect(
     page.getByLabel("Access token obtido pelo fluxo autorizado da plataforma", {
       exact: true,

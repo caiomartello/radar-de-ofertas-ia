@@ -1,4 +1,6 @@
-# Mercado Livre — versão 0.2 e teste no navegador
+# Mercado Livre — conector e teste no navegador
+
+**Atualização 0.3:** o fluxo OAuth e a renovação foram implementados. Consulte [OAUTH-MERCADO-LIVRE.md](OAUTH-MERCADO-LIVRE.md) para a URI exata, configuração no navegador, testes e requisitos de HTTPS. A validação ao vivo continua pendente.
 
 ## Situação real desta entrega
 
@@ -10,13 +12,13 @@ Não houve produtos reais importados nesta validação. Os testes de importaçã
 
 1. Consulte a documentação vigente do Mercado Livre: https://developers.mercadolivre.com.br/pt_br/autenticacao-e-autorizacao e https://developers.mercadolivre.com.br/pt_br/itens-e-buscas.
 2. Cadastre uma aplicação no DevCenter e confirme se a plataforma concede à sua aplicação o acesso de leitura necessário para buscar anúncios, consultar detalhes e reputação. Isso não é obtido automaticamente com a conta de afiliado.
-3. Obtenha um access token pelo fluxo oficial autorizado. Sua senha, código de afiliado, Client ID isolado ou link de produto **não são** esse token. Este aplicativo ainda não inicia o fluxo OAuth nem renova tokens automaticamente; não há promessa de que a aprovação ou a busca ampla estejam disponíveis para sua conta. Não forneça segredos pelo chat.
+3. Use o fluxo OAuth de Integrações para conectar sua aplicação. O servidor recebe e cifra os tokens, com renovação quando fornecida pela plataforma. Alternativamente, a opção avançada permite colar um access token obtido pelo fluxo oficial, sem renovação automática. Sua senha, código de afiliado, Client ID isolado ou link de produto não são tokens. Não há promessa de que a aprovação ou a busca ampla estejam disponíveis para sua conta. Não forneça segredos pelo chat.
 4. Se a plataforma não autorizar a busca, mantenha o conector desligado. Não use scraping, credenciais de terceiros, proxies para contornar bloqueios ou endpoints inventados.
 
 ## Atualizar o aplicativo do Windows preservando seus usuários
 
 1. Feche a janela preta do Radar antigo. Anote a pasta onde ele está instalado.
-2. Baixe a branch `codex/mercado-livre-radar-20261021` pelo GitHub: **Code → Download ZIP**. Use **Extrair tudo** em outra pasta.
+2. Baixe a branch `codex/mercado-livre-oauth-20261021` pelo GitHub: **Code → Download ZIP**. Use **Extrair tudo** em outra pasta.
 3. Na pasta NOVA, abra **ATUALIZAR_RADAR.cmd**. Cole o caminho completo da pasta ANTIGA quando solicitado. Para copiar o caminho, abra a pasta antiga no Explorador e clique na barra de endereços.
 4. O atualizador salva um backup consistente do SQLite, uma cópia privada da configuração e o código anterior em `data/backups/antes-da-atualizacao-...` da instalação antiga. Depois atualiza somente arquivos de código, instala o lockfile e aplica migrations aditivas. `.env.local`, banco, contas, sessões, permissões, listas manuais e arquivos pessoais são preservados. O backup contém dados privados; não o envie ao GitHub nem ao chat.
 5. Ao terminar, volte à pasta ANTIGA e abra **INICIAR_RADAR.cmd**. Entre com o mesmo e-mail e a mesma senha. O iniciador também abre o processo de agendamento.
@@ -27,7 +29,7 @@ Não inicie uma instalação nova se quer manter os dados da instalação antiga
 
 1. Clique em **Ver ofertas reais**. Os exemplos ficam exclusivamente em **Ver exemplos**, inclusive vendedores, grupos, cupons, rascunhos e publicações associados. Novos registros na área de exemplos são marcados como fictícios. O histórico administrativo de auditoria inclui os dois modos para rastrear alterações.
 2. Abra **Integrações → Radar automático · Mercado Livre**. Sem autorização, o estado será “Acesso de API não configurado”. O token só pode ser guardado pelo administrador e é cifrado com a chave preservada do servidor.
-3. Com um token autorizado, confirme a declaração de acesso e use **Cifrar e salvar token → Testar autorização de busca**. O teste consulta `/users/me` e `/sites/MLB/search`, valida os formatos e registra o resultado. Guardar o token não ativa o conector. Um perfil autenticado com busca negada também não ativa o conector.
+3. Conecte por OAuth e use **Testar autorização de busca**. Para token manual, abra **Opção avançada: token obtido manualmente**, confirme a declaração e use **Cifrar e salvar token** antes do teste. O teste consulta `/users/me` e `/sites/MLB/search`, valida os formatos e registra o resultado. Guardar o token ou conectar por OAuth não ativa o conector. Um perfil autenticado com busca negada também não ativa o conector.
 4. Em **Radar de ofertas**, salve um termo de busca. A busca é salva no banco, inicialmente com agendamento desligado; isso pode ser testado mesmo sem token. **Buscar agora na API** só fica disponível depois do teste de acesso. A consulta usa até 10 anúncios por execução e busca os detalhes e vendedores na API; não extrai dados do HTML das lojas.
 5. Verifique o **Histórico das últimas execuções**: recebidos, novos, atualizados, ignorados, requisições, falhas e motivos. Erros podem ocorrer depois de importações parciais; nesse caso o histórico informa o que foi preservado. Nenhum botão de consulta devolve produtos fictícios como fallback.
 6. Ofertas importadas são reais e ficam em revisão. Confirme categoria e condições antes de vincular um cupom; keywords de busca não classificam automaticamente o produto. Anúncios com variações, dados insuficientes, moeda estrangeira, vendedor divergente, inativos ou sem estoque são ignorados e explicados. Se já existirem, voltam para revisão com alerta. Uma consulta válida posterior resolve alertas de indisponibilidade; divergências de vendedor exigem revisão própria.

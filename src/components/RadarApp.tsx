@@ -524,8 +524,30 @@ export default function RadarApp() {
     }
   }
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const outcome = url.searchParams.get("meli_oauth");
     api<State>("state")
-      .then(setData)
+      .then((loaded) => {
+        setData(loaded);
+        if (["connected", "cancelled", "failed"].includes(outcome || "")) {
+          setScreen("integrations");
+          setToast({
+            text:
+              outcome === "connected"
+                ? "Conta conectada por OAuth. Teste a autorização de busca em Integrações."
+                : outcome === "cancelled"
+                  ? "Autorização cancelada no Mercado Livre. A conexão anterior foi preservada."
+                  : "Não foi possível concluir a conexão. Entre como administrador e inicie novamente pelo Radar.",
+            error: outcome !== "connected",
+          });
+          url.searchParams.delete("meli_oauth");
+          window.history.replaceState(
+            null,
+            "",
+            url.pathname + url.search + url.hash,
+          );
+        }
+      })
       .catch((error) => {
         if (error.status !== 401)
           setToast({ text: error.message, error: true });

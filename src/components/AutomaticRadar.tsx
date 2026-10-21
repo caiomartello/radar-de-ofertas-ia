@@ -8,6 +8,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { dateTime } from "@/lib/domain";
+import { MercadoLivreOAuth } from "./MercadoLivreOAuth";
 
 type RadarData = {
   connection: {
@@ -232,34 +233,44 @@ export function AutomaticRadar({
       )}
       {configuration && owner && (
         <>
-          <form onSubmit={tokenSubmit}>
-            <h3>Credencial da API (somente administrador)</h3>
-            <label className="field">
-              <span>
-                Access token obtido pelo fluxo autorizado da plataforma
-              </span>
-              <input
-                aria-label="Access token obtido pelo fluxo autorizado da plataforma"
-                name="token"
-                type="password"
-                autoComplete="off"
-                required
-                minLength={10}
-                maxLength={10000}
-              />
-              <small>
-                Não é sua senha do Mercado Livre, código de afiliado ou link de
-                produto. Guardado cifrado e nunca devolvido à interface.
-              </small>
-            </label>
-            <label className="check-field">
-              <input name="authorized" type="checkbox" required /> Confirmo que
-              tenho autorização para usar este token e consultar dados pela API.
-            </label>
-            <button className="button primary" disabled={busy}>
-              Cifrar e salvar token
-            </button>
-          </form>
+          <MercadoLivreOAuth
+            onChange={async () => {
+              await refresh();
+              await onSync();
+            }}
+          />
+          <details>
+            <summary>Opção avançada: token obtido manualmente</summary>
+            <form onSubmit={tokenSubmit}>
+              <h3>Credencial da API (somente administrador)</h3>
+              <label className="field">
+                <span>
+                  Access token obtido pelo fluxo autorizado da plataforma
+                </span>
+                <input
+                  aria-label="Access token obtido pelo fluxo autorizado da plataforma"
+                  name="token"
+                  type="password"
+                  autoComplete="off"
+                  required
+                  minLength={10}
+                  maxLength={10000}
+                />
+                <small>
+                  Não é sua senha do Mercado Livre, código de afiliado ou link
+                  de produto. Guardado cifrado e nunca devolvido à interface.
+                </small>
+              </label>
+              <label className="check-field">
+                <input name="authorized" type="checkbox" required /> Confirmo
+                que tenho autorização para usar este token e consultar dados
+                pela API.
+              </label>
+              <button className="button primary" disabled={busy}>
+                Cifrar e salvar token
+              </button>
+            </form>
+          </details>
           <div className="button-row">
             <button
               className="button secondary"
@@ -292,9 +303,10 @@ export function AutomaticRadar({
             </button>
           </div>
           <p className="muted">
-            A renovação automática por OAuth ainda não está implementada. Se o
-            token expirar, cadastre um novo token obtido pelo fluxo oficial. Não
-            há geração automática de links de afiliados.
+            Tokens conectados por OAuth são renovados quando a plataforma
+            fornece refresh token. Tokens colados manualmente precisam ser
+            substituídos ao expirar. Não há geração automática de links de
+            afiliados.
           </p>
         </>
       )}

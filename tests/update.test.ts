@@ -143,6 +143,19 @@ test("atualização mantém banco antigo, conta, senha, permissões, configuraç
         .prepare("SELECT name FROM migrations WHERE name='003_radar.sql'")
         .get(),
     );
+    assert.ok(
+      current
+        .prepare("SELECT name FROM migrations WHERE name='005_meli_oauth.sql'")
+        .get(),
+    );
+    assert.equal(
+      current
+        .prepare(
+          "SELECT refresh_ciphertext FROM integrations WHERE id='mercado_livre'",
+        )
+        .get()!.refresh_ciphertext,
+      null,
+    );
     assert.equal(
       current.prepare("PRAGMA integrity_check").get()!.integrity_check,
       "ok",

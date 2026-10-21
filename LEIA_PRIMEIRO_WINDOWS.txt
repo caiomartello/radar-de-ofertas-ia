@@ -35,11 +35,15 @@ Se aparecer erro, copie somente a mensagem de erro, nunca senhas ou chaves.
 Se o Node.js nao for encontrado logo apos a instalacao, feche a janela e
 abra INICIAR_RADAR.cmd de novo.
 
-VERSAO 0.2 - RADAR AUTOMATICO:
+VERSAO 0.3 - RADAR AUTOMATICO E OAUTH:
 Use "Ver ofertas reais" para separar ofertas e exemplos.
 Em Radar de ofertas, voce pode salvar uma busca com agendamento desligado.
-Em Integracoes, o Mercado Livre exige token de uma aplicacao autorizada.
+Em Integracoes, preencha Client ID e Client Secret SOMENTE no formulario local.
+Use "Salvar aplicacao com seguranca" e "Conectar com Mercado Livre".
+Redirect implementado: http://localhost:3000/api/oauth/mercado-livre/callback
+Se o DevCenter exigir HTTPS, configure TLS antes; nao altere so o texto da URL.
+Depois de conectar, use "Testar autorizacao de busca".
 Ter somente conta de afiliado nao libera esse acesso automaticamente.
 O acesso ao vivo ainda nao foi validado: a tentativa sem token recebeu 403.
 Nao houve produtos reais importados nesta validacao. Nao cole segredos no chat.
-Consulte docs/MERCADO-LIVRE.md para detalhes e limitacoes.
+Consulte docs/OAUTH-MERCADO-LIVRE.md e docs/MERCADO-LIVRE.md.

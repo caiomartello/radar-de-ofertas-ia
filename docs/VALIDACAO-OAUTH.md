@@ -1,0 +1,19 @@
+# Validação OAuth — versão 0.3, 21/10/2026
+
+| Verificação                          | Resultado                                                                                                                                                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run lint` e `npm run typecheck` | Passaram.                                                                                                                                                                                      |
+| `npm test`                           | 74 testes passaram, sem falhas ou testes ignorados; incluem os 57 anteriores e 17 de OAuth.                                                                                                    |
+| `npm run build`                      | Passou e listou as quatro rotas reais: config, start, callback e refresh em `/api/oauth/mercado-livre/`.                                                                                       |
+| `npm run test:e2e`                   | 6 testes passaram em Chromium: OAuth cancelado, radar real/exemplos e fluxo manual, em computador e celular.                                                                                   |
+| Atualização de instalação antiga     | Banco/configuração/usuário/senha/permissões/sessão/credencial anteriores preservados; migrations até 005 e integridade SQLite verificadas.                                                     |
+| Segredos                             | Client Secret, access token e refresh token cifrados; respostas de status, callback e auditoria verificadas sem esses valores.                                                                 |
+| Rede e DevCenter reais               | Documentação oficial retornou HTTP 403. Nenhuma credencial real disponível e nenhum fluxo autenticado ao vivo executado. A aceitação de HTTP/localhost no formulário ainda não foi confirmada. |
+
+Os testes de OAuth exercitaram: restrição ao administrador, sessão e origem legítima; estado imprevisível com hash, expiração e uso único; cookie Lax/HttpOnly separado do login Strict; PKCE S256; cancelamento, sessão encerrada, administrador inativo e mudança de configuração; troca de código por POST no endpoint fixo; redirect 303 sem code/state/erro externo; cifragem, expiração e conta retornada; rotação de tokens, renovação antes da consulta, uma única renovação/repetição após 401; concorrência, bloqueio de substituição/desconexão durante renovação, espera 429, erro de autorização, falha de rede incerta, conta divergente, ausência de refresh token e recuperação segura de renovação interrompida.
+
+A página externa do teste de navegador é interceptada pelo Playwright. Ela permite exercitar uma navegação entre sites e confirmar os cookies enviados pelo Chromium, sem consultar a conta comercial. A troca bem-sucedida e a renovação usam transporte controlado exclusivamente nos testes de API, em bancos temporários; não há modo de respostas fictícias no aplicativo normal.
+
+Nada nesta validação confirma que o DevCenter aceita o redirect HTTP local, que a aplicação receberá os escopos desejados ou que a busca de catálogo será autorizada. Se HTTPS for exigido, será necessário configurar TLS e `APP_URL` antes de usar OAuth. Nenhum domínio público, túnel, hospedagem ou serviço pago foi criado. Windows e certificados locais não foram executados nesta máquina Linux.
+
+As funcionalidades anteriores continuam cobertas pelos testes. O banco normal não recebeu contas de teste, aplicação de marketplace ou tokens fictícios. Veja [OAUTH-MERCADO-LIVRE.md](OAUTH-MERCADO-LIVRE.md) para atualização, uso e segurança.

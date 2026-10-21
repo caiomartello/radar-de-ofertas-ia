@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["node:sqlite"],
+  logging: {
+    incomingRequests: { ignore: [/\/api\/oauth\/mercado-livre\/callback/] },
+  },
   async headers() {
     return [
       {

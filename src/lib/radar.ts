@@ -4,7 +4,6 @@ import {
   AppError,
   requirePermission,
   encryptCredential,
-  decryptCredential,
   limit,
   publicUser,
   type User,
@@ -16,6 +15,11 @@ import {
   type ApiTransport,
 } from "./mercado-livre";
 import { importMeliItem, markMeliReview } from "./radar-import";
+import {
+  meliAccessToken,
+  canRefreshMeli,
+  refreshMeliToken,
+} from "./meli-oauth";
 
 type Connection = {
   status: string;
@@ -40,6 +44,13 @@ const connection = () =>
   one<Connection>("SELECT * FROM integrations WHERE id='mercado_livre'")!;
 function ready() {
   const c = connection();
+  if (
+    one(
+      "SELECT id FROM integrations WHERE id='mercado_livre' AND refresh_lease_until>?",
+      now(),
+    )
+  )
+    throw new AppError("Conexão ou renovação em andamento. Aguarde.", 409);
   if (!c.credential_ciphertext)
     throw new AppError(
       "Cadastre um token autorizado em Integrações → Mercado Livre. Conta de afiliado não fornece esse acesso automaticamente.",
@@ -61,26 +72,23 @@ function ready() {
     );
   return c;
 }
-function client(
+async function client(
   c: Connection,
   onRequest: () => void,
   transport?: ApiTransport,
 ) {
   if (!c.credential_ciphertext)
     throw new AppError("Token não configurado.", 422);
-  let token: string;
-  try {
-    token = decryptCredential(c.credential_ciphertext);
-  } catch {
-    throw new AppError(
-      "A credencial não pôde ser aberta. Confira a chave de criptografia preservada e cadastre novamente o token, se necessário.",
-      503,
-    );
-  }
-  return new MercadoLivreClient(token, transport, () => {
-    limit("ml:requests", 120, 3600000);
-    onRequest();
-  });
+  const token = await meliAccessToken(transport, onRequest);
+  return new MercadoLivreClient(
+    token,
+    transport,
+    () => {
+      limit("ml:requests", 120, 3600000);
+      onRequest();
+    },
+    canRefreshMeli() ? () => refreshMeliToken(transport, onRequest) : undefined,
+  );
 }
 function recordFailure(error: unknown) {
   const kind = error instanceof ConnectorError ? error.kind : "internal";
@@ -126,7 +134,7 @@ export async function testMeliConnection(user: User, transport?: ApiTransport) {
     now(),
   );
   try {
-    const api = client(
+    const api = await client(
       c,
       () => {
         requests++;
@@ -213,7 +221,7 @@ export async function executeRadarJob(
     found = 0;
   const notes: string[] = [];
   try {
-    const api = client(
+    const api = await client(
       c,
       () => {
         requests++;
@@ -381,7 +389,13 @@ export async function radarAction(
   if (key === "state" && method === "GET") return radarState(user);
   if (key === "credentials" && method === "POST") {
     requirePermission(user, "integrations.manage");
-    if (one("SELECT id FROM radar_jobs WHERE lease_until>?", now()))
+    if (
+      one("SELECT id FROM radar_jobs WHERE lease_until>?", now()) ||
+      one(
+        "SELECT id FROM integrations WHERE id='mercado_livre' AND refresh_lease_until>?",
+        now(),
+      )
+    )
       throw new AppError(
         "Aguarde a busca em andamento antes de substituir o token.",
         409,
@@ -399,10 +413,11 @@ export async function radarAction(
       .parse(payload);
     transaction(() => {
       run(
-        "UPDATE integrations SET credential_ciphertext=?,status='configured',verified_at=NULL,error_message='Token guardado. Execute o teste de autorização; busca e geração de afiliados não são presumidas.',cooldown_until=NULL,automation_authorized=0 WHERE id='mercado_livre'",
+        "UPDATE integrations SET credential_ciphertext=?,refresh_ciphertext=NULL,token_expires_at=NULL,oauth_user_id=NULL,oauth_client_id=NULL,oauth_scope=NULL,oauth_error=NULL,token_revision=token_revision+1,status='configured',verified_at=NULL,error_message='Token guardado. Execute o teste de autorização; busca e geração de afiliados não são presumidas.',cooldown_until=NULL,automation_authorized=0 WHERE id='mercado_livre'",
         encryptCredential(input.access_token),
       );
       run("UPDATE radar_jobs SET enabled=0");
+      run("DELETE FROM meli_oauth_states");
       audit(user.id, "credential_stored", "integration", "mercado_livre");
     });
     return {
@@ -413,16 +428,23 @@ export async function radarAction(
   }
   if (key === "disconnect" && method === "POST") {
     requirePermission(user, "integrations.manage");
-    if (one("SELECT id FROM radar_jobs WHERE lease_until>?", now()))
+    if (
+      one("SELECT id FROM radar_jobs WHERE lease_until>?", now()) ||
+      one(
+        "SELECT id FROM integrations WHERE id='mercado_livre' AND refresh_lease_until>?",
+        now(),
+      )
+    )
       throw new AppError(
         "Aguarde a busca em andamento antes de desconectar.",
         409,
       );
     transaction(() => {
       run(
-        "UPDATE integrations SET credential_ciphertext=NULL,status='not_configured',verified_at=NULL,error_message=NULL,automation_authorized=0 WHERE id='mercado_livre'",
+        "UPDATE integrations SET credential_ciphertext=NULL,refresh_ciphertext=NULL,token_expires_at=NULL,oauth_user_id=NULL,oauth_client_id=NULL,oauth_scope=NULL,oauth_error=NULL,token_revision=token_revision+1,status='not_configured',verified_at=NULL,error_message=NULL,automation_authorized=0 WHERE id='mercado_livre'",
       );
       run("UPDATE radar_jobs SET enabled=0");
+      run("DELETE FROM meli_oauth_states");
       audit(user.id, "disconnected", "integration", "mercado_livre");
     });
     return { ok: true };

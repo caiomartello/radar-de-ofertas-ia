@@ -80,8 +80,9 @@ export class MercadoLivreClient {
     private token: string,
     private transport: ApiTransport = fetch,
     private onRequest: () => void = () => {},
+    private renewToken?: () => Promise<string>,
   ) {}
-  async get(path: string): Promise<unknown> {
+  async get(path: string, allowRefresh = true): Promise<unknown> {
     // Somente caminhos construídos pelo código; nenhuma URL fornecida pelo usuário.
     if (!path.startsWith("/") || path.startsWith("//"))
       throw new Error("Caminho da API inválido.");
@@ -105,6 +106,10 @@ export class MercadoLivreClient {
       );
     }
     if (!response.ok) {
+      if (response.status === 401 && allowRefresh && this.renewToken) {
+        this.token = await this.renewToken();
+        return this.get(path, false);
+      }
       if (response.status === 401)
         throw new ConnectorError(
           "Mercado Livre recusou o token ou ele expirou. O administrador precisa renovar a autorização.",
