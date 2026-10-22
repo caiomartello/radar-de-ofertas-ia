@@ -12,6 +12,7 @@ import {
   refreshMeliToken,
 } from "./meli-oauth";
 import type { ApiTransport } from "./mercado-livre";
+import { consumeHandoff } from "./meli-handoff";
 
 const headers = {
   "Cache-Control": "no-store",
@@ -70,8 +71,13 @@ export async function handleMeliOAuth(
         return json({ error: "Método não permitido." }, 405);
       let outcome = "failed";
       try {
+        const tickets = req.nextUrl.searchParams.getAll("handoff");
+        if (tickets.length > 1) throw new AppError("Retorno inválido.");
+        const params = tickets.length
+          ? consumeHandoff(tickets[0], req.cookies.get(MELI_FLOW_COOKIE)?.value)
+          : req.nextUrl.searchParams;
         outcome = await finishMeliOAuth(
-          req.nextUrl.searchParams,
+          params,
           req.cookies.get(MELI_FLOW_COOKIE)?.value,
           transport,
         );

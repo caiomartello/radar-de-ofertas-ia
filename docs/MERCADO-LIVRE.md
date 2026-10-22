@@ -1,6 +1,6 @@
 # Mercado Livre — conector e teste no navegador
 
-**Atualização 0.3:** o fluxo OAuth e a renovação foram implementados. Consulte [OAUTH-MERCADO-LIVRE.md](OAUTH-MERCADO-LIVRE.md) para a URI exata, configuração no navegador, testes e requisitos de HTTPS. A validação ao vivo continua pendente.
+**Atualização 0.4:** OAuth e renovação usam um callback HTTPS isolado para desenvolvimento local. Consulte [HTTPS-WINDOWS.md](HTTPS-WINDOWS.md) e [OAUTH-MERCADO-LIVRE.md](OAUTH-MERCADO-LIVRE.md). A URI só é exibida após verificação no computador que executa o Radar. A validação autenticada ao vivo continua pendente.
 
 ## Situação real desta entrega
 
@@ -18,7 +18,7 @@ Não houve produtos reais importados nesta validação. Os testes de importaçã
 ## Atualizar o aplicativo do Windows preservando seus usuários
 
 1. Feche a janela preta do Radar antigo. Anote a pasta onde ele está instalado.
-2. Baixe a branch `codex/mercado-livre-oauth-20261021` pelo GitHub: **Code → Download ZIP**. Use **Extrair tudo** em outra pasta.
+2. Baixe a branch `codex/mercado-livre-https-20261021` pelo GitHub: **Code → Download ZIP**. Use **Extrair tudo** em outra pasta.
 3. Na pasta NOVA, abra **ATUALIZAR_RADAR.cmd**. Cole o caminho completo da pasta ANTIGA quando solicitado. Para copiar o caminho, abra a pasta antiga no Explorador e clique na barra de endereços.
 4. O atualizador salva um backup consistente do SQLite, uma cópia privada da configuração e o código anterior em `data/backups/antes-da-atualizacao-...` da instalação antiga. Depois atualiza somente arquivos de código, instala o lockfile e aplica migrations aditivas. `.env.local`, banco, contas, sessões, permissões, listas manuais e arquivos pessoais são preservados. O backup contém dados privados; não o envie ao GitHub nem ao chat.
 5. Ao terminar, volte à pasta ANTIGA e abra **INICIAR_RADAR.cmd**. Entre com o mesmo e-mail e a mesma senha. O iniciador também abre o processo de agendamento.

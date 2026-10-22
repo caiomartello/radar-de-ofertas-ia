@@ -148,6 +148,11 @@ test("atualização mantém banco antigo, conta, senha, permissões, configuraç
         .prepare("SELECT name FROM migrations WHERE name='005_meli_oauth.sql'")
         .get(),
     );
+    assert.ok(
+      current
+        .prepare("SELECT name FROM migrations WHERE name='006_meli_https.sql'")
+        .get(),
+    );
     assert.equal(
       current
         .prepare(

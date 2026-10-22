@@ -35,6 +35,9 @@ export default defineConfig({
       DATABASE_PATH: "./data/e2e.sqlite",
       APP_URL: baseURL,
       NEXT_TELEMETRY_DISABLED: "1",
+      MELI_OAUTH_CALLBACK_ORIGIN:
+        "https://radar-browser-fixture.trycloudflare.com",
+      MELI_OAUTH_GATEWAY_KEY: "8".repeat(64),
     },
   },
   globalSetup: "./e2e/setup.ts",

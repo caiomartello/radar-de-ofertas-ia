@@ -155,7 +155,7 @@ async function update(target, source = __dirname, install = true) {
     );
   }
   console.log(
-    "Atualização concluída. Abra INICIAR_RADAR.cmd na pasta ANTIGA e entre com o mesmo e-mail e a mesma senha.",
+    "Atualização concluída. Na pasta ANTIGA, use INICIAR_RADAR_HTTPS.cmd para OAuth do Mercado Livre ou INICIAR_RADAR.cmd para acesso local sem túnel. Entre com o mesmo e-mail e a mesma senha.",
   );
   return { backup: saved };
 }

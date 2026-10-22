@@ -418,6 +418,7 @@ export async function radarAction(
       );
       run("UPDATE radar_jobs SET enabled=0");
       run("DELETE FROM meli_oauth_states");
+      run("DELETE FROM meli_oauth_handoffs");
       audit(user.id, "credential_stored", "integration", "mercado_livre");
     });
     return {
@@ -445,6 +446,7 @@ export async function radarAction(
       );
       run("UPDATE radar_jobs SET enabled=0");
       run("DELETE FROM meli_oauth_states");
+      run("DELETE FROM meli_oauth_handoffs");
       audit(user.id, "disconnected", "integration", "mercado_livre");
     });
     return { ok: true };
@@ -508,6 +510,8 @@ export async function workerTick() {
   if (ticking) return;
   ticking = true;
   try {
+    run("DELETE FROM meli_oauth_handoffs WHERE expires_at<=?", now());
+    run("DELETE FROM meli_oauth_states WHERE expires_at<=?", now());
     run(
       "INSERT INTO radar_runtime VALUES ('worker_last_seen',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
       now(),

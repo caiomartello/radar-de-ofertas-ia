@@ -6,7 +6,9 @@ type OAuthStatus = {
   configured: boolean;
   client_id: string;
   secret_present: boolean;
-  redirect_uri: string;
+  redirect_uri: string | null;
+  https_ready: boolean;
+  callback_mode: "tunnel" | "direct";
   local_http: boolean;
   connected: boolean;
   needs_reconnection: boolean;
@@ -39,18 +41,22 @@ export function MercadoLivreOAuth({
   const [error, setError] = useState(false);
   useEffect(() => {
     let mounted = true;
-    api<OAuthStatus>("config")
-      .then((d) => {
-        if (mounted) setData(d);
-      })
-      .catch(() => {
-        if (mounted) {
-          setError(true);
-          setMessage("Não foi possível ler a configuração OAuth.");
-        }
-      });
+    const load = () =>
+      api<OAuthStatus>("config")
+        .then((d) => {
+          if (mounted) setData(d);
+        })
+        .catch(() => {
+          if (mounted) {
+            setError(true);
+            setMessage("Não foi possível ler a configuração OAuth.");
+          }
+        });
+    void load();
+    const timer = setInterval(() => void load(), 15000);
     return () => {
       mounted = false;
+      clearInterval(timer);
     };
   }, []);
   async function action(fn: () => Promise<{ message?: string }>) {
@@ -112,15 +118,23 @@ export function MercadoLivreOAuth({
             <span>URI de redirect para cadastrar no DevCenter</span>
             <input
               readOnly
-              value={data.redirect_uri}
+              value={data.redirect_uri || ""}
+              placeholder="Disponível após verificar o callback HTTPS"
               onFocus={(e) => e.currentTarget.select()}
             />
           </label>
-          {data.local_http && (
+          {!data.https_ready && (
             <p className="notice warning">
-              Esta instalação usa HTTP local. Se o DevCenter exigir HTTPS, este
-              endereço não será aceito: será necessário configurar HTTPS local
-              antes de conectar. Não cadastre uma URL de exemplo.
+              O DevCenter exige HTTPS. Feche a janela atual e abra
+              INICIAR_RADAR_HTTPS.cmd. Aguarde “CALLBACK HTTPS VERIFICADO” e
+              volte aqui. A URI só aparece depois que o retorno chega ao Radar.
+            </p>
+          )}
+          {data.https_ready && data.callback_mode === "tunnel" && (
+            <p className="notice">
+              Callback HTTPS verificado nesta abertura. Somente o retorno OAuth
+              passa pelo túnel; continue usando o dashboard local. Ao reiniciar
+              o túnel, atualize a URI no DevCenter.
             </p>
           )}
           <p>
@@ -186,10 +200,21 @@ export function MercadoLivreOAuth({
       <div className="button-row">
         <button
           className="button primary"
-          disabled={busy || !data?.configured}
+          disabled={busy || !data?.configured || !data.https_ready}
           onClick={() => void connect()}
         >
           Conectar com Mercado Livre
+        </button>
+        <button
+          className="button secondary"
+          disabled={busy}
+          onClick={() =>
+            void action(async () => ({
+              message: "Estado do receptor HTTPS atualizado.",
+            }))
+          }
+        >
+          Atualizar verificação HTTPS
         </button>
         <button
           className="button secondary"

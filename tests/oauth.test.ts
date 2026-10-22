@@ -28,7 +28,7 @@ import type { ApiTransport } from "../src/lib/mercado-livre";
 
 const folder = mkdtempSync(join(tmpdir(), "radar-oauth-test-"));
 process.env.DATABASE_PATH = join(folder, "oauth.sqlite");
-process.env.APP_URL = "http://localhost:3000";
+process.env.APP_URL = "https://localhost:3443";
 process.env.INTEGRATION_ENCRYPTION_KEY = "4".repeat(64);
 after(() => {
   db().close();
@@ -38,7 +38,7 @@ const clientId = "1234567890123456";
 const secret = "FIXTURE-SECRET-NAO-REAL-123";
 const access = "FIXTURE-ACCESS-NAO-REAL-123";
 const refresh = "FIXTURE-REFRESH-NAO-REAL-123";
-const callback = "http://localhost:3000/api/oauth/mercado-livre/callback";
+const callback = "https://localhost:3443/api/oauth/mercado-livre/callback";
 const json = (
   body: unknown,
   status = 200,
@@ -92,11 +92,11 @@ test("OAuth Mercado Livre — segurança e contratos com respostas controladas",
     cookie = sessionCookie(),
     query = "",
     transport?: ApiTransport,
-    origin = "http://localhost:3000",
+    origin = "https://localhost:3443",
   ) {
     return handleMeliOAuth(
       new NextRequest(
-        `http://localhost:3000/api/oauth/mercado-livre/${operation}${query}`,
+        `https://localhost:3443/api/oauth/mercado-livre/${operation}${query}`,
         {
           method,
           headers: { origin, cookie, "content-type": "application/json" },
@@ -310,7 +310,7 @@ test("OAuth Mercado Livre — segurança e contratos com respostas controladas",
       assert.equal(res.status, 303);
       assert.equal(
         res.headers.get("location"),
-        "http://localhost:3000/?meli_oauth=connected",
+        "https://localhost:3443/?meli_oauth=connected",
       );
       assert.equal(res.headers.get("referrer-policy"), "no-referrer");
       assert.equal(res.headers.get("cache-control"), "no-store");
@@ -356,7 +356,7 @@ test("OAuth Mercado Livre — segurança e contratos com respostas controladas",
       );
       assert.equal(
         res.headers.get("location"),
-        "http://localhost:3000/?meli_oauth=cancelled",
+        "https://localhost:3443/?meli_oauth=cancelled",
       );
       assert.equal(connection().credential_ciphertext, before);
       const invalid = await http(
@@ -368,7 +368,7 @@ test("OAuth Mercado Livre — segurança e contratos com respostas controladas",
       );
       assert.equal(
         invalid.headers.get("location"),
-        "http://localhost:3000/?meli_oauth=failed",
+        "https://localhost:3443/?meli_oauth=failed",
       );
       assert.ok(!(await invalid.text()).includes(secret));
     },
@@ -602,7 +602,7 @@ test("OAuth Mercado Livre — segurança e contratos com respostas controladas",
       );
       process.env.APP_URL = "http://evil.example";
       assert.throws(() => meliOAuthStatus(owner), /HTTPS/);
-      process.env.APP_URL = "http://localhost:3000";
+      process.env.APP_URL = "https://localhost:3443";
     },
   );
   await t.test(

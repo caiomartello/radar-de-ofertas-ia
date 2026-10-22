@@ -13,6 +13,7 @@ import {
   type User,
 } from "./auth";
 import { ConnectorError, ML_API, type ApiTransport } from "./mercado-livre";
+import { callbackOrigin, tunnelVerified } from "./meli-https";
 
 export const MELI_CALLBACK_PATH = "/api/oauth/mercado-livre/callback";
 export const MELI_FLOW_COOKIE = "radar_meli_oauth";
@@ -60,7 +61,12 @@ export function meliAppUrl() {
   return url;
 }
 export const meliRedirectUri = () =>
-  new URL(MELI_CALLBACK_PATH, meliAppUrl()).href;
+  new URL(MELI_CALLBACK_PATH, callbackOrigin() || meliAppUrl()).href;
+function httpsReady() {
+  return callbackOrigin()
+    ? tunnelVerified()
+    : meliAppUrl().protocol === "https:";
+}
 function idle() {
   if (
     one("SELECT id FROM radar_jobs WHERE lease_until>?", now()) ||
@@ -79,7 +85,9 @@ export function meliOAuthStatus(user: User) {
     configured: !!c,
     client_id: c?.client_id || "",
     secret_present: !!c,
-    redirect_uri: meliRedirectUri(),
+    redirect_uri: httpsReady() ? meliRedirectUri() : null,
+    https_ready: httpsReady(),
+    callback_mode: callbackOrigin() ? "tunnel" : "direct",
     local_http: meliAppUrl().protocol === "http:",
     connected: !!t.oauth_client_id && !!t.credential_ciphertext,
     needs_reconnection: t.status === "reauthorization_required",
@@ -117,6 +125,7 @@ export function saveMeliOAuthConfig(user: User, payload: unknown) {
       now(),
     );
     run("DELETE FROM meli_oauth_states");
+    run("DELETE FROM meli_oauth_handoffs");
     audit(user.id, "oauth_app_configured", "integration", "mercado_livre");
   });
   return {
@@ -136,6 +145,11 @@ export function beginMeliOAuth(user: User, sessionToken: string) {
       422,
     );
   idle();
+  if (!httpsReady())
+    throw new AppError(
+      "O DevCenter exige HTTPS. Feche o Radar e abra INICIAR_RADAR_HTTPS.cmd; aguarde a verificação do callback antes de conectar.",
+      422,
+    );
   const state = random(),
     browser = random(),
     verifier = random();

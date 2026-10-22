@@ -35,15 +35,20 @@ Se aparecer erro, copie somente a mensagem de erro, nunca senhas ou chaves.
 Se o Node.js nao for encontrado logo apos a instalacao, feche a janela e
 abra INICIAR_RADAR.cmd de novo.
 
-VERSAO 0.3 - RADAR AUTOMATICO E OAUTH:
+VERSAO 0.4 - CALLBACK HTTPS PARA OAUTH:
 Use "Ver ofertas reais" para separar ofertas e exemplos.
 Em Radar de ofertas, voce pode salvar uma busca com agendamento desligado.
 Em Integracoes, preencha Client ID e Client Secret SOMENTE no formulario local.
 Use "Salvar aplicacao com seguranca" e "Conectar com Mercado Livre".
-Redirect implementado: http://localhost:3000/api/oauth/mercado-livre/callback
-Se o DevCenter exigir HTTPS, configure TLS antes; nao altere so o texto da URL.
+O DevCenter exige HTTPS: nao cadastre a URI HTTP antiga.
+Feche o Radar e abra INICIAR_RADAR_HTTPS.cmd na pasta da instalacao.
+Ele instala o conector gratuito Cloudflared, se necessario, pelo WinGet.
+Aguarde "CALLBACK HTTPS VERIFICADO". So depois copie a URI exibida.
+Ela tambem aparece em Integracoes e em data/URI_REDIRECT_MERCADO_LIVRE.txt.
+Somente o callback fica acessivel pelo tunel; o painel continua em localhost.
+A URI muda ao reiniciar: atualize o DevCenter antes de autorizar de novo.
 Depois de conectar, use "Testar autorizacao de busca".
 Ter somente conta de afiliado nao libera esse acesso automaticamente.
 O acesso ao vivo ainda nao foi validado: a tentativa sem token recebeu 403.
 Nao houve produtos reais importados nesta validacao. Nao cole segredos no chat.
-Consulte docs/OAUTH-MERCADO-LIVRE.md e docs/MERCADO-LIVRE.md.
+Consulte docs/HTTPS-WINDOWS.md e docs/OAUTH-MERCADO-LIVRE.md.

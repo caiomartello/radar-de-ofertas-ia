@@ -3,7 +3,9 @@ const config: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["node:sqlite"],
   logging: {
-    incomingRequests: { ignore: [/\/api\/oauth\/mercado-livre\/callback/] },
+    incomingRequests: {
+      ignore: [/\/api\/oauth\/mercado-livre\/(callback|tunnel)/],
+    },
   },
   async headers() {
     return [

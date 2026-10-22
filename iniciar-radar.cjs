@@ -128,6 +128,11 @@ async function main() {
       "Agendador não iniciou. O histórico e as buscas manuais continuam disponíveis.",
     ),
   );
+  for (const signal of ["SIGINT", "SIGTERM"])
+    process.on(signal, () => {
+      server.kill();
+      worker.kill();
+    });
   server.once("exit", () => worker.kill());
   let ended = false;
   server.once("exit", (code) => {
